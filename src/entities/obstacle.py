@@ -1,12 +1,12 @@
 import pygame
-from settings import SCREEN_WIDTH, GROUND_Y, OBSTACLE_SIZE, BLACK
+from settings import OBSTACLE_SIZE, BLACK
 
 
 class Obstacle:
-    def __init__(self):
+    def __init__(self, x, surface_y):
         self.width, self.height = OBSTACLE_SIZE
-        self.x = SCREEN_WIDTH
-        self.y = GROUND_Y - self.height
+        self.x = x
+        self.y = surface_y - self.height
 
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
