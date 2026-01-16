@@ -17,6 +17,7 @@ from settings import (
 from entities.cat import Cat
 from entities.obstacle import Obstacle
 from entities.platform import Platform
+from menu import Menu
 
 
 # ===== TUNING =====
@@ -31,13 +32,7 @@ OBSTACLE_PADDING = 40
 MAX_JUMP_DISTANCE = 260
 
 
-def main():
-    pygame.init()
-
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption(TITLE)
-    clock = pygame.time.Clock()
-
+def run_game(screen, clock):
     running = True
     cat = Cat()
 
@@ -91,7 +86,7 @@ def main():
         # ===== EVENTS =====
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                return False
 
             elif event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_SPACE, pygame.K_w):
@@ -190,8 +185,7 @@ def main():
                     cat.on_ground = True
                     cat.rect.y = cat.y
                 else:
-                    print("GAME OVER")
-                    running = False
+                    return None
 
         # ===== DRAW =====
         screen.fill(WHITE)
@@ -204,6 +198,36 @@ def main():
 
         cat.draw(screen)
         pygame.display.flip()
+
+    return None
+
+
+def main():
+    pygame.init()
+
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption(TITLE)
+    clock = pygame.time.Clock()
+
+    menu = Menu(screen)
+    running = True
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                button = menu.handle_event(event)
+                if button == "start":
+                    result = run_game(screen, clock)
+                    if result is False:
+                        running = False
+                    else:
+                        menu = Menu(screen)
+
+        menu.draw()
+        clock.tick(FPS)
 
     pygame.quit()
 
