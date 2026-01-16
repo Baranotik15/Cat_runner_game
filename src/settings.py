@@ -35,6 +35,7 @@ PLATFORM_LEVELS = [
 # ---------- PHYSICS ----------
 GRAVITY = 1
 JUMP_FORCE = 18
+FLOAT_GRAVITY = 0.1
 
 # ---------- GAME SPEED ----------
 BASE_SPEED = 8
