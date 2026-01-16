@@ -1,5 +1,5 @@
 import pygame
-from settings import SCREEN_WIDTH, GROUND_Y, OBSTACLE_SIZE, BLACK, OBSTACLE_SPEED
+from settings import SCREEN_WIDTH, GROUND_Y, OBSTACLE_SIZE, BLACK
 
 
 class Obstacle:
@@ -10,8 +10,8 @@ class Obstacle:
 
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
-    def update(self):
-        self.x -= OBSTACLE_SPEED
+    def update(self, speed):
+        self.x -= speed
         self.rect.x = self.x
 
     def draw(self, screen):
