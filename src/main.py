@@ -18,6 +18,9 @@ from entities.obstacle import Obstacle
 from entities.platform import Platform
 
 
+DROP_HOLD_DELAY = 200  # ms
+
+
 def main():
     pygame.init()
 
@@ -38,18 +41,20 @@ def main():
     game_speed = BASE_SPEED
     speed_timer = 0
 
-    last_platform_level_index = 0  # 0 — базовый уровень
+    last_platform_level_index = 0
+    s_pressed_time = None
+
+    last_platform_x = {0: 0, 1: -9999, 2: -9999}
+    max_jump_distance = 260
 
     while running:
         clock.tick(FPS)
 
-        # ========= SPEED UPDATE =========
         speed_timer += 1
         if speed_timer >= FPS * SPEED_INTERVAL:
             game_speed += SPEED_INCREASE
             speed_timer = 0
 
-        # ========= EVENTS =========
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -59,32 +64,40 @@ def main():
                     cat.jump()
 
                 if event.key == pygame.K_s:
-                    cat.drop_down(platforms)
+                    s_pressed_time = pygame.time.get_ticks()
 
-        # ========= UPDATE CAT =========
+            if event.type == pygame.KEYUP:
+                if event.key == pygame.K_s:
+                    if s_pressed_time is not None:
+                        held_time = pygame.time.get_ticks() - s_pressed_time
+
+                        if held_time < DROP_HOLD_DELAY:
+                            cat.drop_once(platforms)
+
+                        cat.drop_hold_end()
+                        s_pressed_time = None
+
+        if s_pressed_time is not None and not cat.drop_hold:
+            held_time = pygame.time.get_ticks() - s_pressed_time
+            if held_time >= DROP_HOLD_DELAY:
+                cat.drop_hold_start()
+
         cat.update()
 
-        # ========= PLATFORMS (SMART + SAFE SPAWN) =========
         platform_timer += 1
         if platform_timer > 140:
+            possible_starts = [0]
+            weights = [8]
 
-            possible_starts = []
-            weights = []
-
-            for i in range(len(PLATFORM_LEVELS)):
+            for i in range(1, len(PLATFORM_LEVELS)):
                 if abs(i - last_platform_level_index) <= 1:
-                    possible_starts.append(i)
-
-                    if i == 0:
-                        weights.append(6)   # базовый уровень — чаще всего
-                    elif i == 1:
-                        weights.append(3)
-                    else:
-                        weights.append(1)   # верхний — редко
+                    lower_level = i - 1
+                    if SCREEN_WIDTH - last_platform_x[lower_level] < max_jump_distance:
+                        possible_starts.append(i)
+                        weights.append(2 if i == 1 else 1)
 
             start_level = random.choices(possible_starts, weights=weights)[0]
 
-            # ограничиваем размер связки для высоких уровней
             if start_level >= 2:
                 level_count = random.choices([1, 2], weights=[4, 1])[0]
             else:
@@ -97,22 +110,24 @@ def main():
                     used_levels.append(level_index)
 
             for level_index in used_levels:
-                platforms.append(
-                    Platform(PLATFORM_LEVELS[level_index])
-                )
+                platform = Platform(PLATFORM_LEVELS[level_index])
+                platforms.append(platform)
+                last_platform_x[level_index] = platform.x
 
-            last_platform_level_index = used_levels[-1]
+            last_platform_level_index = start_level
             platform_timer = 0
 
-        # ========= PLATFORM UPDATE & COLLISIONS =========
         for platform in platforms[:]:
             platform.update(game_speed)
             if platform.off_screen():
                 platforms.remove(platform)
 
         for platform in platforms:
-            if cat.ignore_platform and platform is not cat.target_platform:
-                continue
+            if cat.ignore_platform:
+                if cat.drop_hold:
+                    continue
+                if platform is not cat.target_platform:
+                    continue
 
             if cat.rect.colliderect(platform.rect):
                 if cat.prev_rect.bottom <= platform.rect.top and cat.velocity_y >= 0:
@@ -123,7 +138,6 @@ def main():
                     cat.target_platform = None
                     cat.rect.y = cat.y
 
-        # ========= OBSTACLES =========
         obstacle_timer += 1
         if obstacle_timer > 90:
             obstacles.append(Obstacle())
@@ -145,7 +159,6 @@ def main():
                     print("GAME OVER")
                     running = False
 
-        # ========= DRAW =========
         screen.fill(WHITE)
 
         for platform in platforms:

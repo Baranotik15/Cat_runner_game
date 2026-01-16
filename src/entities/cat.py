@@ -13,6 +13,7 @@ class Cat:
 
         self.ignore_platform = False
         self.target_platform = None
+        self.drop_hold = False
 
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
         self.prev_rect = self.rect.copy()
@@ -22,20 +23,24 @@ class Cat:
             self.velocity_y = -JUMP_FORCE
             self.on_ground = False
 
-    def drop_down(self, platforms):
-        lower_platforms = [
-            p for p in platforms
-            if p.rect.top > self.rect.bottom
-        ]
-
-        if lower_platforms:
-            self.target_platform = min(lower_platforms, key=lambda p: p.rect.top)
-        else:
-            self.target_platform = None
+    def drop_once(self, platforms):
+        lower = [p for p in platforms if p.rect.top > self.rect.bottom]
+        self.target_platform = min(lower, key=lambda p: p.rect.top) if lower else None
 
         self.ignore_platform = True
+        self.drop_hold = False
         self.on_ground = False
         self.velocity_y = max(self.velocity_y, 5)
+
+    def drop_hold_start(self):
+        self.ignore_platform = True
+        self.target_platform = None
+        self.drop_hold = True
+        self.on_ground = False
+        self.velocity_y = max(self.velocity_y, 5)
+
+    def drop_hold_end(self):
+        self.drop_hold = False
 
     def update(self):
         self.prev_rect = self.rect.copy()
@@ -49,6 +54,7 @@ class Cat:
             self.on_ground = True
             self.ignore_platform = False
             self.target_platform = None
+            self.drop_hold = False
 
         self.rect.x = self.x
         self.rect.y = self.y
