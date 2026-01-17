@@ -3,10 +3,13 @@ from settings import SCREEN_WIDTH, SCREEN_HEIGHT, WHITE, BLACK
 
 
 class Menu:
-    def __init__(self, screen):
+    def __init__(self, screen, menu_music):
         self.screen = screen
         self.font_large = pygame.font.Font(None, 72)
         self.font_medium = pygame.font.Font(None, 48)
+        
+        pygame.mixer.music.load(menu_music)
+        pygame.mixer.music.play(-1)
         
         self.button_width = 300
         self.button_height = 60

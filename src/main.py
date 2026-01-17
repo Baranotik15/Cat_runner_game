@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 
 from settings import (
     SCREEN_WIDTH,
@@ -32,7 +33,11 @@ OBSTACLE_PADDING = 40
 MAX_JUMP_DISTANCE = 260
 
 
-def run_game(screen, clock):
+def run_game(screen, clock, jump_sound, game_music):
+    pygame.mixer.music.stop()
+    pygame.mixer.music.load(game_music)
+    pygame.mixer.music.play(-1)
+    
     running = True
     cat = Cat()
 
@@ -90,6 +95,8 @@ def run_game(screen, clock):
 
             elif event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_SPACE, pygame.K_w):
+                    if cat.on_ground or cat.current_platform is not None:
+                        jump_sound.play()
                     cat.jump()
                     cat.start_float()
 
@@ -185,6 +192,7 @@ def run_game(screen, clock):
                     cat.on_ground = True
                     cat.rect.y = cat.y
                 else:
+                    pygame.mixer.music.stop()
                     return None
 
         # ===== DRAW =====
@@ -204,12 +212,20 @@ def run_game(screen, clock):
 
 def main():
     pygame.init()
+    pygame.mixer.init()
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption(TITLE)
     clock = pygame.time.Clock()
 
-    menu = Menu(screen)
+    sounds_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sounds")
+    menu_music = os.path.join(sounds_dir, "menu_sound.mp3")
+    game_music = os.path.join(sounds_dir, "main_music.mp3")
+    jump_sound_path = os.path.join(sounds_dir, "jamp.mp3")
+    
+    jump_sound = pygame.mixer.Sound(jump_sound_path)
+    
+    menu = Menu(screen, menu_music)
     running = True
 
     while running:
@@ -220,11 +236,11 @@ def main():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 button = menu.handle_event(event)
                 if button == "start":
-                    result = run_game(screen, clock)
+                    result = run_game(screen, clock, jump_sound, game_music)
                     if result is False:
                         running = False
                     else:
-                        menu = Menu(screen)
+                        menu = Menu(screen, menu_music)
 
         menu.draw()
         clock.tick(FPS)
