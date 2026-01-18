@@ -15,6 +15,7 @@ CAT_SIZE = (50, 50)
 
 # ---------- GROUND ----------
 GROUND_Y = SCREEN_HEIGHT - 60
+BG_Y_OFFSET = 80
 
 # ---------- OBSTACLES ----------
 OBSTACLE_SIZE = (40, 60)

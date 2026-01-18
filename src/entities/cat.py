@@ -56,6 +56,14 @@ class Cat:
         ]
 
         if not below:
+            ground_target_y = GROUND_Y
+            if abs(ground_target_y - target_y) <= tolerance:
+                self.target_platform = None
+                self.ignore_platform = True
+                self.on_ground = False
+                self.current_platform = None
+                self.velocity_y = 6
+                return
             return
 
         self.target_platform = min(below, key=lambda p: abs(p.rect.centerx - self.rect.centerx))

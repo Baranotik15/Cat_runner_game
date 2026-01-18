@@ -7,12 +7,12 @@ from settings import (
     SCREEN_HEIGHT,
     TITLE,
     FPS,
-    WHITE,
     BASE_SPEED,
     SPEED_INCREASE,
     SPEED_INTERVAL,
     PLATFORM_LEVELS,
     GROUND_Y,
+    BG_Y_OFFSET,   # используем ТОЛЬКО для масштабирования
 )
 
 from entities.cat import Cat
@@ -37,7 +37,22 @@ def run_game(screen, clock, jump_sound, game_music):
     pygame.mixer.music.stop()
     pygame.mixer.music.load(game_music)
     pygame.mixer.music.play(-1)
-    
+
+    # ===== LOAD BACKGROUND =====
+    img_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "img")
+    bg_image = pygame.image.load(
+        os.path.join(img_dir, "main_fon.png")
+    ).convert()
+
+    # ✅ ФОН ВЫШЕ ЭКРАНА, НО НЕ СДВИГАЕМ
+    bg_image = pygame.transform.scale(
+        bg_image,
+        (SCREEN_WIDTH, SCREEN_HEIGHT + BG_Y_OFFSET)
+    )
+
+    bg_x1 = 0
+    bg_x2 = SCREEN_WIDTH
+
     running = True
     cat = Cat()
 
@@ -64,6 +79,16 @@ def run_game(screen, clock, jump_sound, game_music):
             game_speed += SPEED_INCREASE
             speed_timer = 0
 
+        # ===== BACKGROUND MOVE =====
+        bg_x1 -= game_speed
+        bg_x2 -= game_speed
+
+        if bg_x1 <= -SCREEN_WIDTH:
+            bg_x1 = SCREEN_WIDTH
+
+        if bg_x2 <= -SCREEN_WIDTH:
+            bg_x2 = SCREEN_WIDTH
+
         # ===== UPDATE CAT =====
         cat.update()
 
@@ -73,7 +98,7 @@ def run_game(screen, clock, jump_sound, game_music):
             if platform.off_screen():
                 platforms.remove(platform)
 
-        # ===== PLATFORM COLLISIONS (before input to update on_ground immediately) =====
+        # ===== PLATFORM COLLISIONS =====
         for platform in platforms:
             if cat.ignore_platform:
                 if cat.drop_hold:
@@ -122,9 +147,7 @@ def run_game(screen, clock, jump_sound, game_music):
         if ground_obstacle_timer >= GROUND_OBSTACLE_TIMER:
             ground_obstacle_timer = 0
             if random.random() < GROUND_OBSTACLE_CHANCE:
-                obstacles.append(
-                    Obstacle(SCREEN_WIDTH, GROUND_Y)
-                )
+                obstacles.append(Obstacle(SCREEN_WIDTH, GROUND_Y))
 
         # ===== PLATFORM SPAWN =====
         platform_timer += 1
@@ -134,13 +157,10 @@ def run_game(screen, clock, jump_sound, game_music):
 
             for i in range(len(PLATFORM_LEVELS)):
                 if abs(i - last_platform_level) <= 1:
-                    if i == 0:
-                        can_jump = True
-                    else:
-                        can_jump = (
-                            SCREEN_WIDTH - last_platform_x[i - 1]
-                            <= MAX_JUMP_DISTANCE
-                        )
+                    can_jump = True if i == 0 else (
+                        SCREEN_WIDTH - last_platform_x[i - 1]
+                        <= MAX_JUMP_DISTANCE
+                    )
 
                     if can_jump:
                         possible_levels.append(i)
@@ -151,7 +171,6 @@ def run_game(screen, clock, jump_sound, game_music):
                 weights = [1]
 
             start_level = random.choices(possible_levels, weights)[0]
-
             chain_len = random.randint(
                 1,
                 min(3, len(PLATFORM_LEVELS) - start_level)
@@ -163,16 +182,13 @@ def run_game(screen, clock, jump_sound, game_music):
                 platforms.append(platform)
                 last_platform_x[idx] = platform.x
 
-                # ===== OBSTACLE ON PLATFORM =====
                 if random.random() < PLATFORM_OBSTACLE_CHANCE:
                     if platform.width > OBSTACLE_PADDING * 2 + 40:
                         ox = random.randint(
                             platform.x + OBSTACLE_PADDING,
                             platform.x + platform.width - OBSTACLE_PADDING - 40
                         )
-                        obstacles.append(
-                            Obstacle(ox, platform.y)
-                        )
+                        obstacles.append(Obstacle(ox, platform.y))
 
             last_platform_level = start_level
             platform_timer = 0
@@ -196,7 +212,8 @@ def run_game(screen, clock, jump_sound, game_music):
                     return None
 
         # ===== DRAW =====
-        screen.fill(WHITE)
+        screen.blit(bg_image, (bg_x1, 0))
+        screen.blit(bg_image, (bg_x2, 0))
 
         for platform in platforms:
             platform.draw(screen)
@@ -222,9 +239,9 @@ def main():
     menu_music = os.path.join(sounds_dir, "menu_sound.mp3")
     game_music = os.path.join(sounds_dir, "main_music.mp3")
     jump_sound_path = os.path.join(sounds_dir, "jamp.mp3")
-    
+
     jump_sound = pygame.mixer.Sound(jump_sound_path)
-    
+
     menu = Menu(screen, menu_music)
     running = True
 
